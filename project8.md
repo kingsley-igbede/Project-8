@@ -54,6 +54,64 @@
 
 ![Apache2 Status](./images/apache2-status.jpg)
 
+#Configure load balancing
+
+`sudo vi /etc/apache2/sites-available/000-default.conf`
+
+`<Proxy "balancer://mycluster">
+               BalancerMember http://<WebServer1-Private-IP-Address>:80 loadfactor=5 timeout=1
+               BalancerMember http://<WebServer2-Private-IP-Address>:80 loadfactor=5 timeout=1
+               ProxySet lbmethod=bytraffic
+               # ProxySet lbmethod=byrequests
+        </Proxy>
+
+        ProxyPreserveHost On
+        ProxyPass / balancer://mycluster/
+        ProxyPassReverse / balancer://mycluster/`
+
+#Restart apache server
+
+`sudo systemctl restart apache2`
+
+4. Verify that our configuration works – try to access your LB’s public IP address or Public DNS name from your browser:
+
+`sudo systemctl restart apache2`
+
+![LB Web Browser Status](./images/lb-webbrowser-status.jpg)
+
+#Open two ssh/Putty consoles for both Web Servers and run following command:
+
+`sudo tail -f /var/log/httpd/access_log`
+
+## Optional Step – Configure Local DNS Names Resolution
+
+*What we can do, is to configure local domain name resolution. The easiest way is to use /etc/hosts file, although this approach is not very scalable, but it is very easy to configure and shows the concept well. So let us configure IP address to domain name mapping for our LB*
+
+#Open this file on the LB server
+
+`sudo vi /etc/hosts`
+
+#Add 2 records into this file with Local IP address and arbitrary name for both of your Web Servers
+
+`WebServer1-Private-IP-Address` :Web1
+
+`WebServer2-Private-IP-Address` :Web2
+
+#Now you can update your LB config file with those names instead of IP addresses.
+
+`sudo vi /etc/apache2/sites-available/000-default.conf`
+
+![LB Log File DNS Resolution ](./images/lb-logfile-dns-resolution.jpg)
+
+#You can try to curl your Web Servers from LB locally curl http://Web1 or curl http://Web2 – it shall work.
+
+`curl http://Web1`
+
+`curl http://Web2`
+
+![Web2 html Status](./images/web2-html-status.jpg)
+
+*Remember, this is only internal configuration and it is also local to your LB server, these names will neither be ‘resolvable’ from other servers internally nor from the Internet.*
 
 
 
